@@ -1,0 +1,4 @@
+[submodule "tlsh"]
+	path = tlsh
+	url = https://github.com/trendmicro/tlsh
+    ignore = dirty
