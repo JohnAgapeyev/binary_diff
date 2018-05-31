@@ -5,8 +5,26 @@ from collections import defaultdict
 import tlsh
 
 if len(sys.argv) < 3:
-    print("Requires a minimum of two files as arguments")
+    print("Requires a minimum of two arguments")
     exit(1)
+
+if sys.argv[1] == "-d":
+    out_data = {}
+    for arg in sys.argv:
+        if arg == sys.argv[0] or arg == sys.argv[1]:
+            continue
+
+        if os.path.getsize(arg) < 256:
+            print("Input file must be a minimum of 256 bytes\n")
+            exit(1)
+
+        file_hash = tlsh.hash(open(arg, 'rb').read())
+        out_data[arg] = file_hash
+
+    for elem in sorted(out_data):
+        print('{},{}'.format(elem, out_data[elem]))
+
+    exit(0)
 
 if os.path.getsize(sys.argv[1]) < 256:
     print("Input file must be a minimum of 256 bytes\n")
