@@ -61,7 +61,7 @@ set(VERSION_PATCH 1)
 
 # TLSH uses only half the counting buckets.
 # It can use all the buckets now.
-set(TLSH_BUCKETS_128 1)
+set(TLSH_BUCKETS_256 1)
 if(TLSH_BUCKETS_48 EQUAL 1)
   set(TLSH_HASH "min hash")
   add_definitions(-DBUCKETS_48)
@@ -77,7 +77,7 @@ endif()
 
 # TLSH uses 1 byte checksum. The collision rate is 1 in 24.
 # It can use 3 bytes checksum now. That collision rate in 1 in 5800.
-set(TLSH_CHECKSUM_1B 1)
+set(TLSH_CHECKSUM_1B 0)
 if(TLSH_CHECKSUM_1B EQUAL 1)
   set(TLSH_CHECKSUM "1 byte checksum")
 else()
