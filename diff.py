@@ -34,3 +34,4 @@ for i in sorted(test_col)[:n]:
     print("Distance " + str(i))
     for elem in test_col[i]:
         print(elem[0])
+        print(elem[1])
