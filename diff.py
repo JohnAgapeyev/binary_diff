@@ -2,79 +2,78 @@
 import sys
 import os
 import getopt
+import csv
 from collections import defaultdict
 import tlsh
 
+from multiprocessing.dummy import Pool
+
 def usage():
-    print("python3 ./diff.py [args] [in_file] [compare_files]")
+    print("python3 ./diff.py [file directory] [metadata file]")
+
+def lsh(filename):
+    if os.path.getsize(filename) < 256:
+        raise ValueError("{} must be at least 256 bytes".format(filename))
+
+    print(filename)
+    return tlsh.hash(open(filename, 'rb').read())
+
+def diff_hash(one, two):
+    return tlsh.diff(one, two)
+
+def list_files(directory):
+    f = []
+    for (dirpath, _, filenames) in os.walk(directory):
+        for name in filenames:
+            f.append(os.path.join(dirpath, name))
+    return f
+
+def parse_metadata(filename):
+    contents = []
+    with open(filename, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            #Remove the md5 and sha1 hashes since they're useless to me
+            contents.append(row[:-2])
+    return contents
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "hdn:", ["help", "dump", "number"])
+    opts, args = getopt.getopt(sys.argv[1:], "hd:m:", ["help", "directory", "metadata"])
 except getopt.GetoptError as err:
     print(err) # will print something like "option -a not recognized"
     usage()
     exit(2)
 
-dump = False
-n = 0
-file_inputs = args
+directory = ""
+meta = ""
 
 for o, a in opts:
-    if o in ("-n", "--number"):
-        n = int(a)
+    if o in ("-d", "--directory"):
+        directory = a
     elif o in ("-h", "--help"):
         usage()
         exit()
-    elif o in ("-d", "--dump"):
-        dump = True
+    elif o in ("-m", "--metadata"):
+        meta = a
 
-if n <= 0:
-    print("N not set, defaulting to 10")
-    n = 10
-
-if len(file_inputs) < 2:
-    print("Program must contain at least 2 file inputs")
+if not directory or not meta:
+    print("Program must be provided a file directory path and a metadata file")
     exit(1)
 
-if dump:
-    out_data = {}
-    for arg in file_inputs:
-        if os.path.getsize(arg) < 256:
-            print("Input file must be a minimum of 256 bytes\n")
-            exit(1)
+file_list = list_files(directory)
+hash_list = []
 
-        file_hash = tlsh.hash(open(arg, 'rb').read())
-        out_data[arg] = file_hash
+with Pool(8) as p:
+    hash_list = p.map(lsh, file_list)
+    for h in sorted(hash_list):
+        print(h)
 
-    for elem in sorted(out_data):
-        print('{},{}'.format(elem, out_data[elem]))
-
-    exit()
-
-if os.path.getsize(file_inputs[0]) < 256:
-    print("Input file must be a minimum of 256 bytes\n")
-    exit(1)
-
-base = tlsh.hash(open(file_inputs[0], 'rb').read())
-test_col = defaultdict(list)
-
-for arg in file_inputs[1:]:
-    if os.path.getsize(arg) < 256:
-        print("Test file must be a minimum of 256 bytes\n")
-        exit(1)
-
-    new_hash = tlsh.hash(open(arg, 'rb').read())
-    diff = tlsh.diff(base, new_hash)
-    test_col[diff].append((arg, new_hash))
-
-print("Base hash: " + str(base))
-
-count = 0
-for i in sorted(test_col)[:n]:
-    print("\nDistance " + str(i))
-    for elem in test_col[i]:
-        print(elem[0])
-        print(elem[1])
-        count += 1
-        if count >= n:
-            exit()
+#count = 0
+#for i in sorted(test_col)[:n]:
+    #print("\nDistance " + str(i))
+    #for elem in test_col[i]:
+        #print(elem[0])
+        #print(elem[1])
+        #count += 1
+        #if count >= n:
+            #exit()
