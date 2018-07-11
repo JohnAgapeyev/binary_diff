@@ -4,6 +4,7 @@ import os
 import getopt
 import csv
 import itertools
+from heapq import nsmallest
 from collections import defaultdict
 import tlsh
 import numpy
@@ -44,6 +45,21 @@ def parse_metadata(filename):
             #Remove the md5 and sha1 hashes since they're useless to me
             contents.append(row[:-2])
     return contents[1:]
+
+def get_n_closest(n, filenames, adjacency):
+    closest = {}
+    for f in filenames:
+        elem = adj[filenames.index(f)]
+        smallest_dists = nsmallest(n + 1, elem)
+        smallest_files = []
+        for d in smallest_dists:
+            #Ignore the file listing itself
+            if d == 0:
+                continue
+            #Filename indices are analagous to adjacency indices
+            smallest_files.append((d, filenames[smallest_dists.index(d)]))
+        closest[f] = smallest_files
+    return closest
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], "hd:m:", ["help", "directory", "metadata"])
@@ -86,7 +102,7 @@ with Pool() as p:
             adj[j][i] = d
 
     #print(adj.tolist())
-    print(adj)
+    #print(adj)
 
     assert adj[5][106] == adj[106][5]
     assert adj[34][35] == adj[35][34]
@@ -94,6 +110,12 @@ with Pool() as p:
     for i in range(len(file_list)):
         assert lsh((file_list[i], meta_contents)) == hash_list[i], "Hashes don't match!"
 
-    for h in sorted(hash_list):
-        print(h)
+    c = get_n_closest(10, file_list, adj)
+    for key, value in c.items():
+        print(key)
+        for v in value:
+            print(v)
+
+    #for h in sorted(hash_list):
+        #print(h)
 
