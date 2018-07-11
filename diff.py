@@ -5,6 +5,7 @@ import getopt
 import csv
 from collections import defaultdict
 import tlsh
+import numpy
 
 from multiprocessing.dummy import Pool
 
@@ -63,17 +64,25 @@ if not directory or not meta:
 file_list = list_files(directory)
 hash_list = []
 
-with Pool(8) as p:
+with Pool() as p:
     hash_list = p.map(lsh, file_list)
+
+    adj = numpy.zeros((len(hash_list), len(hash_list)), int)
+
+    for i in range(len(hash_list)):
+        for j in range(len(hash_list)):
+            d = diff_hash(hash_list[i], hash_list[j]);
+            adj[i][j] = d
+            adj[j][i] = d
+
+    print(adj.tolist())
+
+    assert adj[5][106] == adj[106][5]
+    assert adj[34][35] == adj[35][34]
+
+    for i in range(len(file_list)):
+        assert lsh(file_list[i]) == hash_list[i], "Hashes don't match!"
+
     for h in sorted(hash_list):
         print(h)
 
-#count = 0
-#for i in sorted(test_col)[:n]:
-    #print("\nDistance " + str(i))
-    #for elem in test_col[i]:
-        #print(elem[0])
-        #print(elem[1])
-        #count += 1
-        #if count >= n:
-            #exit()
