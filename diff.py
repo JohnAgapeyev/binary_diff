@@ -105,8 +105,6 @@ file_list = list_files(directory)
 hash_list = []
 meta_contents = parse_metadata(meta)
 
-#print(meta_contents)
-
 with Pool() as p:
     hash_list = p.map(lsh, zip(file_list, itertools.repeat(meta_contents)))
 
@@ -132,7 +130,4 @@ with Pool() as p:
         print(key)
         for v in value:
             print(v)
-
-    #for h in sorted(hash_list):
-        #print(h)
 
