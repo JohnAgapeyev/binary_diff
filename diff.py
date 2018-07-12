@@ -18,7 +18,10 @@ def usage():
 
 def lsh(data):
     filename = data[0]
-    meta = [d for d in data[1] if d[-1] == os.path.basename(filename)]
+    if not data[1] or data[1] == None:
+        meta = []
+    else:
+        meta = [d for d in data[1] if d[-1] == os.path.basename(filename)][0]
 
     if os.path.getsize(filename) < 256:
         raise ValueError("{} must be at least 256 bytes".format(filename))
@@ -42,7 +45,7 @@ def lsh(data):
 
     file_hash = tlsh.hash(open(filename, 'rb').read())
 
-    return tlsh.hash(str.encode(file_hash + ''.join(meta[0])))
+    return tlsh.hash(str.encode(file_hash + ''.join(meta)))
 
 def diff_hash(one, two):
     return tlsh.diff(one, two)
@@ -97,13 +100,17 @@ for o, a in opts:
     elif o in ("-m", "--metadata"):
         meta = a
 
-if not directory or not meta:
-    print("Program must be provided a file directory path and a metadata file")
+if not directory:
+    print("Program must be provided a file directory path")
     exit(1)
 
 file_list = list_files(directory)
 hash_list = []
-meta_contents = parse_metadata(meta)
+
+if meta:
+    meta_contents = parse_metadata(meta)
+else:
+    meta_contents = None
 
 with Pool() as p:
     hash_list = p.map(lsh, zip(file_list, itertools.repeat(meta_contents)))
@@ -115,15 +122,6 @@ with Pool() as p:
             d = diff_hash(hash_list[i], hash_list[j]);
             adj[i][j] = d
             adj[j][i] = d
-
-    #print(adj.tolist())
-    #print(adj)
-
-    assert adj[5][106] == adj[106][5]
-    assert adj[34][35] == adj[35][34]
-
-    for i in range(len(file_list)):
-        assert lsh((file_list[i], meta_contents)) == hash_list[i], "Hashes don't match!"
 
     c = get_n_closest(10, file_list, adj)
     for key, value in c.items():
