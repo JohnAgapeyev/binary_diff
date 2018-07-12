@@ -4,6 +4,8 @@ import os
 import getopt
 import csv
 import itertools
+import zipfile
+import tarfile
 from heapq import nsmallest
 from collections import defaultdict
 import tlsh
@@ -20,6 +22,21 @@ def lsh(data):
 
     if os.path.getsize(filename) < 256:
         raise ValueError("{} must be at least 256 bytes".format(filename))
+
+    if tarfile.is_tarfile(filename):
+        tar = tarfile.open(filename, 'r')
+        for member in tar.getmembers():
+            if not member or member.size < 256:
+                continue
+            meta.append(tlsh.hash(tar.extractfile(member).read()))
+    elif zipfile.is_zipfile(filename):
+        z = zipfile.ZipFile(filename)
+        for member in z.infolist():
+            if not member or member.file_size < 256:
+                continue
+            meta.append(tlsh.hash(z.read(member)))
+    else:
+        print("Not a compressed archive")
 
     print(filename)
 
