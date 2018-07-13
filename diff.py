@@ -26,26 +26,33 @@ def lsh(data):
     if os.path.getsize(filename) < 256:
         raise ValueError("{} must be at least 256 bytes".format(filename))
 
+    print(filename)
+
     if tarfile.is_tarfile(filename):
         tar = tarfile.open(filename, 'r')
         for member in tar.getmembers():
             if not member or member.size < 256:
                 continue
-            meta.append(tlsh.hash(tar.extractfile(member).read()))
+            try:
+                meta.append(tlsh.hash(tar.extractfile(member).read()))
+            except:
+                continue
     elif zipfile.is_zipfile(filename):
         z = zipfile.ZipFile(filename)
         for member in z.infolist():
             if not member or member.file_size < 256:
                 continue
-            meta.append(tlsh.hash(z.read(member)))
-    else:
-        print("Not a compressed archive")
-
-    print(filename)
+            try:
+                meta.append(tlsh.hash(z.read(member)))
+            except:
+                continue
 
     file_hash = tlsh.hash(open(filename, 'rb').read())
 
-    return tlsh.hash(str.encode(file_hash + ''.join(meta)))
+    if not meta:
+        return file_hash
+    else:
+        return tlsh.hash(str.encode(file_hash + ''.join(meta)))
 
 def diff_hash(one, two):
     return tlsh.diff(one, two)
