@@ -6,6 +6,7 @@ import csv
 import itertools
 import zipfile
 import tarfile
+import binwalk
 from heapq import nsmallest
 from collections import defaultdict
 import tlsh
@@ -29,26 +30,43 @@ def lsh(data):
     print(filename)
 
     if tarfile.is_tarfile(filename):
-        tar = tarfile.open(filename, 'r')
-        for member in tar.getmembers():
-            if not member or member.size < 256:
-                continue
-            try:
-                meta.append(tlsh.hash(tar.extractfile(member).read()))
-            except:
-                continue
-    elif zipfile.is_zipfile(filename):
-        try:
-            z = zipfile.ZipFile(filename)
-            for member in z.infolist():
-                if not member or member.file_size < 256:
+        with tarfile.open(filename, 'r') as tar:
+            for member in tar.getmembers():
+                if not member or member.size < 256:
                     continue
                 try:
-                    meta.append(tlsh.hash(z.read(member)))
+                    meta.append(tlsh.hash(tar.extractfile(member).read()))
+                    for module in binwalk.scan(tar.extractfile(member).read(), signature=True, quiet=True):
+                        for result in module.results:
+                            meta.append(str(result.file.path))
+                            meta.append(str(result.offset))
+                            meta.append(str(result.description))
                 except:
                     continue
+    elif zipfile.is_zipfile(filename):
+        try:
+            with zipfile.ZipFile(filename) as z:
+                for member in z.infolist():
+                    if not member or member.file_size < 256:
+                        continue
+                    try:
+                        with z.read(member) as zipdata:
+                            meta.append(tlsh.hash(zipdata))
+                            for module in binwalk.scan(zipdata):
+                                for result in module.results:
+                                    meta.append(str(result.file.path))
+                                    meta.append(str(result.offset))
+                                    meta.append(str(result.description))
+                    except:
+                        continue
         except:
             pass
+
+    for module in binwalk.scan(filename, signature=True, quiet=True):
+        for result in module.results:
+            meta.append(str(result.file.path))
+            meta.append(str(result.offset))
+            meta.append(str(result.description))
 
     file_hash = tlsh.hash(open(filename, 'rb').read())
 
