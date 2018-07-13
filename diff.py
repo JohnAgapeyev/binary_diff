@@ -26,7 +26,7 @@ def lsh(data):
     if os.path.getsize(filename) < 256:
         raise ValueError("{} must be at least 256 bytes".format(filename))
 
-    print(filename)
+    #print(filename)
 
     if tarfile.is_tarfile(filename):
         tar = tarfile.open(filename, 'r')
@@ -38,14 +38,17 @@ def lsh(data):
             except:
                 continue
     elif zipfile.is_zipfile(filename):
-        z = zipfile.ZipFile(filename)
-        for member in z.infolist():
-            if not member or member.file_size < 256:
-                continue
-            try:
-                meta.append(tlsh.hash(z.read(member)))
-            except:
-                continue
+        try:
+            z = zipfile.ZipFile(filename)
+            for member in z.infolist():
+                if not member or member.file_size < 256:
+                    continue
+                try:
+                    meta.append(tlsh.hash(z.read(member)))
+                except:
+                    continue
+        except:
+            pass
 
     file_hash = tlsh.hash(open(filename, 'rb').read())
 
@@ -77,12 +80,24 @@ def get_n_closest(n, filenames, adjacency):
     closest = {}
     for f in filenames:
         elem = adj[filenames.index(f)]
-        smallest_dists = nsmallest(n + 1, elem)
+        #smallest_dists = nsmallest(n + 1, elem)
+        smallest_dists = sorted(elem)
         smallest_files = []
+        old_dist = 0
         for d in smallest_dists:
             #Ignore the file listing itself
             if d == 0:
                 continue
+            elif d == old_dist:
+                continue
+            old_dist = d
+            if smallest_dists.count(d) > 1:
+                prev = 0
+                for i in range(smallest_dists.count(d)):
+                    dist_filename = smallest_dists.index(d, prev)
+                    smallest_files.append((d, filenames[dist_filename]))
+                    prev = dist_filename + 1
+                continue;
             #Filename indices are analagous to adjacency indices
             smallest_files.append((d, filenames[smallest_dists.index(d)]))
         closest[f] = smallest_files
