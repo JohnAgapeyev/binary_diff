@@ -26,7 +26,7 @@ def lsh(data):
     if os.path.getsize(filename) < 256:
         raise ValueError("{} must be at least 256 bytes".format(filename))
 
-    #print(filename)
+    print(filename)
 
     if tarfile.is_tarfile(filename):
         tar = tarfile.open(filename, 'r')
@@ -80,8 +80,7 @@ def get_n_closest(n, filenames, adjacency):
     closest = {}
     for f in filenames:
         elem = adj[filenames.index(f)]
-        #smallest_dists = nsmallest(n + 1, elem)
-        smallest_dists = sorted(elem)
+        smallest_dists = nsmallest(n + 1, elem)
         smallest_files = []
         old_dist = 0
         for d in smallest_dists:
