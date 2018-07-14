@@ -151,8 +151,7 @@ if meta:
 else:
     meta_contents = None
 
-with Pool() as p:
-    hash_list = p.map(lsh, zip(file_list, itertools.repeat(meta_contents)))
+    hash_list = [lsh(x) for x in zip(file_list, itertools.repeat(meta_contents))]
 
     adj = numpy.zeros((len(hash_list), len(hash_list)), int)
 
