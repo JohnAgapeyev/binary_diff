@@ -19,6 +19,35 @@ from multiprocessing.dummy import Pool
 def usage():
     print("python3 ./diff.py [file directory] [metadata file]")
 
+#Values are from the TLSH paper
+def convert_dist_to_confidence(d):
+    if d < 30:
+        return 99.99819
+    elif d < 40:
+        return 99.93
+    elif d < 50:
+        return 99.48
+    elif d < 60:
+        return 98.91
+    elif d < 70:
+        return 98.16
+    elif d < 80:
+        return 97.07
+    elif d < 90:
+        return 95.51
+    elif d < 100:
+        return 93.57
+    elif d < 150:
+        return 75.67
+    elif d < 200:
+        return 49.9
+    elif d < 250:
+        return 30.94
+    elif d < 300:
+        return 20.7
+    else:
+        return 0
+
 def lsh(data):
     filename = data[0]
     if not data[1] or data[1] == None:
@@ -266,6 +295,6 @@ for i in range(len(hash_list)):
 c = get_n_closest(10, file_list, adj)
 for key, value in c.items():
     print(key)
-    for v in value:
-        print(v)
+    for dist, name in value:
+        print(convert_dist_to_confidence(dist), dist, name)
 
