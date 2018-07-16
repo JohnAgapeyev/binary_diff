@@ -80,22 +80,24 @@ def lsh(data):
 def lsh_json(data):
     filename = data[0]
     meta = []
+    print(filename)
     if not data[1] or data[1] == None:
         pass
     else:
-        stuff = [d for d in data[1] if d['filename'] == os.path.basename(filename)][0]
-        [meta.extend([k,v]) for k,v in stuff.items()]
-        [meta.extend([k,v]) for k,v in meta[3].items()]
-        del meta[3]
-        [meta.extend([k,v]) for k,v in meta[-1].items()]
-        del meta[-3]
-        [meta.extend([k,v]) for k,v in meta[-4].items()]
-        del meta[-6]
+        stuff = [d for d in data[1] if d['filename'] == os.path.basename(filename)]
+        if stuff:
+            if len(stuff) >= 1:
+                stuff = stuff[0]
+            [meta.extend([k,v]) for k,v in stuff.items()]
+            [meta.extend([k,v]) for k,v in meta[3].items()]
+            del meta[3]
+            [meta.extend([k,v]) for k,v in meta[-1].items()]
+            del meta[-3]
+            [meta.extend([k,v]) for k,v in meta[-4].items()]
+            del meta[-6]
 
     if os.path.getsize(filename) < 256:
         raise ValueError("{} must be at least 256 bytes".format(filename))
-
-    print(filename)
 
     if tarfile.is_tarfile(filename):
         with tarfile.open(filename, 'r') as tar:
