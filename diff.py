@@ -224,8 +224,7 @@ def get_n_closest(n, filenames, adjacency):
     closest = {}
     for f in filenames:
         elem = adj[filenames.index(f)]
-        #smallest_dists = nsmallest(n + 1, elem)
-        smallest_dists = sorted(elem)
+        smallest_dists = nsmallest(n + 1, elem)
         smallest_files = []
         old_dist = 0
         for d in smallest_dists:
@@ -248,7 +247,7 @@ def get_n_closest(n, filenames, adjacency):
     return closest
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "hd:m:b", ["help", "directory", "metadata", "binwalk"])
+    opts, args = getopt.getopt(sys.argv[1:], "hd:m:bn:", ["help", "directory", "metadata", "binwalk", "number"])
 except getopt.GetoptError as err:
     print(err) # will print something like "option -a not recognized"
     usage()
@@ -257,6 +256,7 @@ except getopt.GetoptError as err:
 directory = ""
 meta = ""
 use_binwalk = False
+n = 10
 
 for o, a in opts:
     if o in ("-d", "--directory"):
@@ -268,6 +268,8 @@ for o, a in opts:
         meta = a
     elif o in ("-b", "--binwalk"):
         use_binwalk = True
+    elif o in ("-n", "--number"):
+        n = int(a)
 
 if not directory:
     print("Program must be provided a file directory path")
@@ -292,7 +294,7 @@ for i in range(len(hash_list)):
         adj[i][j] = d
         adj[j][i] = d
 
-c = get_n_closest(10, file_list, adj)
+c = get_n_closest(n, file_list, adj)
 for key, value in c.items():
     print(key)
     for dist, name in value:
