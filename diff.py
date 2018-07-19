@@ -19,6 +19,17 @@ from multiprocessing.dummy import Pool
 def usage():
     print("python3 ./diff.py [file directory] [metadata file]")
 
+def partition_hashes(hash_list, file_list):
+    output = {}
+    for h in hash_list:
+        filename = file_list[hash_list.index(h)]
+        quartile_range = int(h[6:10], 16)
+        if quartile_range not in output:
+            output[quartile_range] = [(filename, h)]
+        else:
+            output[quartile_range].append((filename, h))
+    return output
+
 #Values are from the TLSH paper
 def convert_dist_to_confidence(d):
     if d < 30:
@@ -285,6 +296,11 @@ else:
     meta_contents = None
 
 hash_list = [lsh_json(x) for x in zip(file_list, itertools.repeat(meta_contents))]
+
+stuff = partition_hashes(hash_list, file_list)
+
+for p in stuff.items():
+    print(p)
 
 adj = numpy.zeros((len(hash_list), len(hash_list)), int)
 
