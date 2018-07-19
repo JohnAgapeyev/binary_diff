@@ -257,6 +257,42 @@ def get_n_closest(n, filenames, adjacency):
         closest[f] = smallest_files
     return closest
 
+def get_partition_entry(partition_hashes, new_hash):
+    return partition_hashes[int(new_hash[6:10], 16)]
+
+def get_n_closest_partial(n, hash_partition, hash_list):
+    closest = {}
+    for h in hash_list:
+        entry = get_partition_entry(hash_partition, h)
+
+        elem = []
+        for k,v in entry:
+            elem.append(diff_hash(h, v))
+
+        print(elem)
+        exit()
+        smallest_dists = nsmallest(n + 1, elem)
+        smallest_files = []
+        old_dist = 0
+        for d in smallest_dists:
+            #Ignore the file listing itself
+            if d == 0:
+                continue
+            elif d == old_dist:
+                continue
+            old_dist = d
+            if smallest_dists.count(d) > 1:
+                prev = 0
+                for i in range(smallest_dists.count(d)):
+                    dist_filename = smallest_dists.index(d, prev)
+                    smallest_files.append((d, filenames[dist_filename]))
+                    prev = dist_filename + 1
+                continue;
+            #Filename indices are analagous to adjacency indices
+            smallest_files.append((d, filenames[smallest_dists.index(d)]))
+        closest[f] = smallest_files
+    return closest
+
 try:
     opts, args = getopt.getopt(sys.argv[1:], "hd:m:bn:", ["help", "directory", "metadata", "binwalk", "number"])
 except getopt.GetoptError as err:
@@ -301,6 +337,8 @@ stuff = partition_hashes(hash_list, file_list)
 
 for p in stuff.items():
     print(p)
+
+get_n_closest_partial(n, stuff, hash_list)
 
 adj = numpy.zeros((len(hash_list), len(hash_list)), int)
 
