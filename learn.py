@@ -58,7 +58,7 @@ def cnn_model_fn(features, labels, mode):
     logits = tf.layers.dense(inputs=dropout, units=10)
 
     predictions = {
-        "classes": tf.argmax(inputs=logits, axis=1),
+        "classes": tf.argmax(input=logits, axis=1),
         "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
     }
 
@@ -95,9 +95,24 @@ def cnn_model_fn(features, labels, mode):
 #for e in dataset.make_one_shot_iterator():
     #print(e)
 
+def get_all_files(directory):
+    f = []
+    for (dirpath, _, filenames) in os.walk(directory):
+        for name in filenames:
+            f.append(os.path.join(dirpath, name))
+    return f
+
 def data_input_fn():
     ten = []
-    for arg in sys.argv:
+    lab = []
+    for arg in get_all_files(sys.argv[1]):
+        if "Schneider" in arg:
+            lab.append("Schneider")
+        elif "Siemens" in arg:
+            print()
+            lab.append("Siemens")
+        else:
+            lab.append("None")
         data = np.fromfile(arg, np.uint8)
         file_width = math.ceil(math.sqrt(len(data)))
         data.resize((file_width, file_width))
@@ -105,9 +120,31 @@ def data_input_fn():
         t = tf.expand_dims(t, -1)
         t = tf.image.resize_images(t, (1024,1024), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         ten.append(t)
-    dataset = tf.data.Dataset.from_tensors(ten)
-    #return dataset.get_one_shot_iterator().get_next()
-    return dataset
+    dataset = tf.data.Dataset.from_tensors((ten, lab))
+
+    #dataset = dataset.map(parser)
+    dataset = dataset.map(parser)
+
+    dataset = dataset.shuffle(10000).batch(3)
+    it = dataset.make_one_shot_iterator()
+    features, labels = it.get_next()
+    return features, labels
+
+def parser(record, label):
+    keys_to_features = {
+        "x": tf.VarLenFeature(tf.uint8),
+    }
+    #parsed = tf.parse_single_example(record, keys_to_features)
+
+    print(record)
+    print(label)
+
+    record = tf.cast(record, tf.float16)
+
+    # Perform additional preprocessing on the parsed data.
+    #image = tf.image.decode_jpeg(parsed["image_data"])
+    #label = tf.cast(parsed["label"], tf.int32)
+    return {"x": record}, label
 
 classify = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir="/tmp/cnn_model")
 
@@ -126,14 +163,14 @@ classify.train(
     steps=20000,
     hooks=[logging_hook])
 
-eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-    x={"x": eval_data},
-    y=eval_labels,
-    num_epochs=1,
-    shuffle=False)
+#eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    #x={"x": eval_data},
+    #y=eval_labels,
+    #num_epochs=1,
+    #shuffle=False)
 
-eval_results = classify.evaluate(input_fn=eval_input_fn)
+#eval_results = classify.evaluate(input_fn=eval_input_fn)
 
-print(eval_results)
+#print(eval_results)
 
 
