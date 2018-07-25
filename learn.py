@@ -64,9 +64,11 @@ for arg in sys.argv:
     data = np.fromfile(arg, np.uint8)
     file_width = math.ceil(math.sqrt(len(data)))
     data.resize((file_width, file_width))
-    ten.append(tf.convert_to_tensor(data))
+    t = tf.convert_to_tensor(data)
+    t = tf.expand_dims(t, -1)
+    t = tf.image.resize_images(t, (1024,1024), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    ten.append(t)
 
-print(ten)
-#dataset = tf.data.Dataset.from_tensors(ten)
-#for e in dataset.make_one_shot_iterator():
-    #print(e)
+dataset = tf.data.Dataset.from_tensors(ten)
+for e in dataset.make_one_shot_iterator():
+    print(e)
