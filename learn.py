@@ -14,27 +14,45 @@ from multiprocessing.dummy import Pool
 def cnn_model_fn(features, labels, mode):
     input_layer = tf.reshape(features["x"], [-1, 1024, 1024, 1])
 
+    #Turns 1024x1024 to 1024x1024
+    #Would be 1020x1020 if padding wasn't used
     conv1 = tf.layers.conv2d(
         inputs=input_layer,
         filters=32,
-        kernel_size=[5,5],
+        kernel_size=5,
         padding='same',
         activation=tf.nn.relu
     )
 
+    #Turns 1024x1024 to 512x512
     pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2,2], strides=2)
 
+    #Would turns 512x512 into 508x508, but doesn't due to padding
     conv2 = tf.layers.conv2d(
         inputs=pool1,
         filters=64,
-        kernel_size=[5,5],
+        kernel_size=5,
         padding='same',
         activation=tf.nn.relu
     )
+
+    #Turns 512x512 to 256x256
     pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2,2], strides=2)
 
-    pool2_flat = tf.reshape(pool2, [-1, 7*7*64])
-    dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
+    #Turns 256x256 to 256x256
+    conv3 = tf.layers.conv2d(
+        inputs=pool2,
+        filters=128,
+        kernel_size=5,
+        padding='same',
+        activation=tf.nn.relu
+    )
+
+    #Turns 256x256 to 128x128
+    pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2,2], strides=2)
+
+    pool3_flat = tf.reshape(pool3, [-1, 128*128*128])
+    dense = tf.layers.dense(inputs=pool3_flat, units=1024, activation=tf.nn.relu)
     dropout = tf.layers.dropout(inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
 
     logits = tf.layers.dense(inputs=dropout, units=10)
