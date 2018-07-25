@@ -78,20 +78,62 @@ def cnn_model_fn(features, labels, mode):
     return tf.estimator.EstimatorSpec(mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 
-tf.enable_eager_execution()
+#tf.enable_eager_execution()
 
-ten = []
+#ten = []
 
-for arg in sys.argv:
-    data = np.fromfile(arg, np.uint8)
-    file_width = math.ceil(math.sqrt(len(data)))
-    data.resize((file_width, file_width))
-    t = tf.convert_to_tensor(data)
-    t = tf.expand_dims(t, -1)
-    t = tf.image.resize_images(t, (1024,1024), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    ten.append(t)
+#for arg in sys.argv:
+    #data = np.fromfile(arg, np.uint8)
+    #file_width = math.ceil(math.sqrt(len(data)))
+    #data.resize((file_width, file_width))
+    #t = tf.convert_to_tensor(data)
+    #t = tf.expand_dims(t, -1)
+    #t = tf.image.resize_images(t, (1024,1024), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    #ten.append(t)
 
-dataset = tf.data.Dataset.from_tensors(ten)
-for e in dataset.make_one_shot_iterator():
-    print(e)
+#dataset = tf.data.Dataset.from_tensors(ten)
+#for e in dataset.make_one_shot_iterator():
+    #print(e)
+
+def data_input_fn():
+    ten = []
+    for arg in sys.argv:
+        data = np.fromfile(arg, np.uint8)
+        file_width = math.ceil(math.sqrt(len(data)))
+        data.resize((file_width, file_width))
+        t = tf.convert_to_tensor(data)
+        t = tf.expand_dims(t, -1)
+        t = tf.image.resize_images(t, (1024,1024), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        ten.append(t)
+    dataset = tf.data.Dataset.from_tensors(ten)
+    #return dataset.get_one_shot_iterator().get_next()
+    return dataset
+
+classify = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir="/tmp/cnn_model")
+
+tensors_to_log = {"probabilities": "softmax_tensor"}
+logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log, every_n_iter=50)
+
+#train_input_fn = tf.estimator.inputs.numpy_input_fn(
+    #x={"x": train_data},
+    #y=train_labels,
+    #batch_size=100,
+    #num_epochs=None,
+    #shuffle=True)
+
+classify.train(
+    input_fn=data_input_fn,
+    steps=20000,
+    hooks=[logging_hook])
+
+eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"x": eval_data},
+    y=eval_labels,
+    num_epochs=1,
+    shuffle=False)
+
+eval_results = classify.evaluate(input_fn=eval_input_fn)
+
+print(eval_results)
+
 
