@@ -78,7 +78,7 @@ def cnn_model_fn(features, labels, mode):
     return tf.estimator.EstimatorSpec(mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 
-#tf.enable_eager_execution()
+tf.enable_eager_execution()
 
 #ten = []
 
@@ -107,12 +107,15 @@ def data_input_fn():
     lab = []
     for arg in get_all_files(sys.argv[1]):
         if "Schneider" in arg:
-            lab.append("Schneider")
+            #lab.append("Schneider")
+            lab.append(1)
         elif "Siemens" in arg:
             print()
-            lab.append("Siemens")
+            #lab.append("Siemens")
+            lab.append(2)
         else:
-            lab.append("None")
+            #lab.append("None")
+            lab.append(0)
         data = np.fromfile(arg, np.uint8)
         file_width = math.ceil(math.sqrt(len(data)))
         data.resize((file_width, file_width))
@@ -122,12 +125,12 @@ def data_input_fn():
         ten.append(t)
     dataset = tf.data.Dataset.from_tensors((ten, lab))
 
-    #dataset = dataset.map(parser)
     dataset = dataset.map(parser)
 
     dataset = dataset.shuffle(10000).batch(3)
     it = dataset.make_one_shot_iterator()
     features, labels = it.get_next()
+    print(features, labels)
     return features, labels
 
 def parser(record, label):
@@ -136,10 +139,10 @@ def parser(record, label):
     }
     #parsed = tf.parse_single_example(record, keys_to_features)
 
+    record = tf.cast(record, tf.float16)
+
     print(record)
     print(label)
-
-    record = tf.cast(record, tf.float16)
 
     # Perform additional preprocessing on the parsed data.
     #image = tf.image.decode_jpeg(parsed["image_data"])
