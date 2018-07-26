@@ -11,6 +11,8 @@ import tensorflow as tf
 from PIL import Image
 from multiprocessing.dummy import Pool
 
+os.system("rm -rf /tmp/cnn_model")
+
 def cnn_model_fn(features, labels, mode):
     input_layer = tf.reshape(features["x"], [-1, 256, 256, 1])
 
@@ -57,14 +59,14 @@ def cnn_model_fn(features, labels, mode):
     #Actually 32x32
     #pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2,2], strides=2)
 
-    pool3_flat = tf.reshape(pool1, [-1, 64*64*32])
+    pool3_flat = tf.reshape(pool1, [-1, 64*64*128])
     #pool3_flat = tf.reshape(pool3, [-1, 32*32*128])
     #pool3_flat = tf.reshape(pool2, [-1, 64*64*64])
     dense = tf.layers.dense(inputs=pool3_flat, units=1024, activation=tf.nn.relu)
-    #dropout = tf.layers.dropout(inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+    dropout = tf.layers.dropout(inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
 
-    #logits = tf.layers.dense(inputs=dropout, units=3)
-    logits = tf.layers.dense(inputs=dense, units=3)
+    logits = tf.layers.dense(inputs=dropout, units=3)
+    #logits = tf.layers.dense(inputs=dense, units=3)
 
     predictions = {
         "classes": tf.argmax(input=logits, axis=1),
@@ -76,8 +78,8 @@ def cnn_model_fn(features, labels, mode):
 
     labels = tf.squeeze(labels)
 
-    print(logits)
-    print(labels)
+    print(logits.shape)
+    print(labels.shape)
 
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
     #loss = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits)
@@ -116,7 +118,7 @@ def parser(record, label):
     #label = tf.cast(parsed["label"], tf.int32)
     return {"x": record}, label
 
-#tf.enable_eager_execution()
+tf.enable_eager_execution()
 
 #ten = []
 #lab = []
@@ -192,13 +194,14 @@ def data_input_fn():
 
     dataset = dataset.map(parser)
 
-    dataset = dataset.shuffle(10000).batch(3)
+    #dataset = dataset.shuffle(10000)
+    dataset = dataset.batch(3)
     it = dataset.make_one_shot_iterator()
     features, labels = it.get_next()
     print(features, labels)
     return features, labels
 
-classify = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir="/home/john/cnn_model")
+classify = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir="/tmp/cnn_model")
 
 tensors_to_log = {"probabilities": "softmax_tensor"}
 logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log, every_n_iter=50)
