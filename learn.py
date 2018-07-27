@@ -11,7 +11,7 @@ import tensorflow as tf
 from PIL import Image
 from multiprocessing.dummy import Pool
 
-os.system("rm -rf /tmp/cnn_model")
+#os.system("rm -rf /tmp/cnn_model")
 
 def cnn_model_fn(features, labels, mode):
     input_layer = tf.reshape(features["x"], [-1, 256, 256, 1])
@@ -59,7 +59,8 @@ def cnn_model_fn(features, labels, mode):
     #Actually 32x32
     #pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2,2], strides=2)
 
-    pool3_flat = tf.reshape(pool1, [-1, 64*64*128])
+    #pool3_flat = tf.reshape(pool1, [-1, 64*64*128])
+    pool3_flat = tf.reshape(pool1, [-1, 256*64*32])
     #pool3_flat = tf.reshape(pool3, [-1, 32*32*128])
     #pool3_flat = tf.reshape(pool2, [-1, 64*64*64])
     dense = tf.layers.dense(inputs=pool3_flat, units=1024, activation=tf.nn.relu)
@@ -173,7 +174,6 @@ def data_input_fn():
             #lab.append("Schneider")
             lab.append(1)
         elif "Siemens" in arg:
-            print()
             #lab.append("Siemens")
             lab.append(2)
         else:
@@ -187,10 +187,10 @@ def data_input_fn():
         t = tf.image.resize_images(t, (256,256), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         ten.append(t)
 
-    l = tf.convert_to_tensor(lab)
-    l = tf.expand_dims(l, -1)
-    #dataset = tf.data.Dataset.from_tensors((ten, lab))
-    dataset = tf.data.Dataset.from_tensors((ten, l))
+    #l = tf.convert_to_tensor(lab)
+    #l = tf.expand_dims(l, -1)
+    dataset = tf.data.Dataset.from_tensors((ten, lab))
+    #dataset = tf.data.Dataset.from_tensors((ten, l))
 
     dataset = dataset.map(parser)
 
@@ -201,7 +201,42 @@ def data_input_fn():
     print(features, labels)
     return features, labels
 
-classify = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir="/tmp/cnn_model")
+def eval_fn():
+    ten = []
+    lab = []
+    for arg in get_all_files(sys.argv[2]):
+        if "Schneider" in arg:
+            #lab.append("Schneider")
+            lab.append(1)
+        elif "Siemens" in arg:
+            #lab.append("Siemens")
+            lab.append(2)
+        else:
+            #lab.append("None")
+            lab.append(0)
+        data = np.fromfile(arg, np.uint8)
+        file_width = math.ceil(math.sqrt(len(data)))
+        data.resize((file_width, file_width))
+        t = tf.convert_to_tensor(data)
+        t = tf.expand_dims(t, -1)
+        t = tf.image.resize_images(t, (256,256), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        ten.append(t)
+
+    #l = tf.convert_to_tensor(lab)
+    #l = tf.expand_dims(l, -1)
+    dataset = tf.data.Dataset.from_tensors((ten, lab))
+    #dataset = tf.data.Dataset.from_tensors((ten, l))
+
+    dataset = dataset.map(parser)
+
+    #dataset = dataset.shuffle(10000)
+    dataset = dataset.batch(3)
+    it = dataset.make_one_shot_iterator()
+    features, labels = it.get_next()
+    return features, labels
+
+#classify = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir="/tmp/cnn_model")
+classify = tf.estimator.Estimator(model_fn=cnn_model_fn, model_dir="/home/john/cnn_model")
 
 tensors_to_log = {"probabilities": "softmax_tensor"}
 logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log, every_n_iter=50)
@@ -227,7 +262,7 @@ classify.train(
     #num_epochs=1,
     #shuffle=False)
 
-eval_results = classify.evaluate(input_fn=data_input_fn)
+eval_results = classify.evaluate(input_fn=eval_fn)
 
 print(eval_results)
 
