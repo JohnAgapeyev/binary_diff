@@ -12,9 +12,17 @@ import collections
 from heapq import nsmallest
 from collections import defaultdict
 import tlsh
-import numpy
+import numpy as np
+
+import matplotlib.pyplot as plt
 
 from multiprocessing.dummy import Pool
+from sklearn.cluster import *
+from sklearn import metrics
+from sklearn.datasets.samples_generator import make_blobs
+from sklearn.preprocessing import StandardScaler
+
+pool = Pool()
 
 def usage():
     print("python3 ./diff.py [file directory] [metadata file]")
@@ -335,14 +343,14 @@ else:
 
 hash_list = [lsh_json(x) for x in zip(file_list, itertools.repeat(meta_contents))]
 
-for key, value in get_n_closest_partial(n, partition_hashes(hash_list, file_list), hash_list).items():
-    print(key)
-    for dist, name in value:
-        print(convert_dist_to_confidence(dist), dist, name)
+#for key, value in get_n_closest_partial(n, partition_hashes(hash_list, file_list), hash_list).items():
+    #print(key)
+    #for dist, name in value:
+        #print(convert_dist_to_confidence(dist), dist, name)
 
-exit()
+#exit()
 
-adj = numpy.zeros((len(hash_list), len(hash_list)), int)
+adj = np.zeros((len(hash_list), len(hash_list)), int)
 
 for i in range(len(hash_list)):
     for j in range(len(hash_list)):
@@ -350,9 +358,46 @@ for i in range(len(hash_list)):
         adj[i][j] = d
         adj[j][i] = d
 
-c = get_n_closest(n, file_list, adj)
-for key, value in c.items():
-    print(key)
-    for dist, name in value:
-        print(convert_dist_to_confidence(dist), dist, name)
+best_cluster_count = 0
+best_silhouette_score = -1.0
+
+for i in range(1, 16):
+    print("Trying cluster count {}".format(i))
+    ms = MiniBatchKMeans(n_clusters=10)
+    cluster_labels = ms.fit_predict(adj)
+
+    silhouette_avg = metrics.silhouette_score(adj, cluster_labels)
+
+    if silhouette_avg > best_silhouette_score:
+        best_silhouette_score = silhouette_avg
+        best_cluster_count = i
+
+
+ms = MiniBatchKMeans(n_clusters=best_cluster_count).fit(adj)
+labels = ms.labels_
+cluster_centers = ms.cluster_centers_
+
+labels_unique = np.unique(labels)
+n_clusters_ = len(labels_unique)
+
+print("number of estimated clusters : %d" % n_clusters_)
+
+plt.figure(1)
+plt.clf()
+
+colors = itertools.cycle('bgrcmykbgrcmykbgrcmykbgrcmyk')
+for k, col in zip(range(n_clusters_), colors):
+    my_members = labels == k
+    cluster_center = cluster_centers[k]
+    plt.plot(adj[my_members, 0], adj[my_members, 1], col + '.')
+    plt.plot(cluster_center[0], cluster_center[1], '+', markerfacecolor=col,
+             markeredgecolor='k', markersize=5)
+plt.title('Estimated number of clusters: %d' % n_clusters_)
+plt.show()
+
+#c = get_n_closest(n, file_list, adj)
+#for key, value in c.items():
+    #print(key)
+    #for dist, name in value:
+        #print(convert_dist_to_confidence(dist), dist, name)
 
