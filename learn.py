@@ -187,10 +187,10 @@ def data_input_fn():
         t = tf.image.resize_images(t, (256,256), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         ten.append(t)
 
-    #l = tf.convert_to_tensor(lab)
-    #l = tf.expand_dims(l, -1)
-    dataset = tf.data.Dataset.from_tensors((ten, lab))
-    #dataset = tf.data.Dataset.from_tensors((ten, l))
+    l = tf.convert_to_tensor(lab)
+    l = tf.expand_dims(l, -1)
+    #dataset = tf.data.Dataset.from_tensors((ten, lab))
+    dataset = tf.data.Dataset.from_tensors((ten, l))
 
     dataset = dataset.map(parser)
 
@@ -222,10 +222,10 @@ def eval_fn():
         t = tf.image.resize_images(t, (256,256), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         ten.append(t)
 
-    #l = tf.convert_to_tensor(lab)
-    #l = tf.expand_dims(l, -1)
-    dataset = tf.data.Dataset.from_tensors((ten, lab))
-    #dataset = tf.data.Dataset.from_tensors((ten, l))
+    l = tf.convert_to_tensor(lab)
+    l = tf.expand_dims(l, -1)
+    #dataset = tf.data.Dataset.from_tensors((ten, lab))
+    dataset = tf.data.Dataset.from_tensors((ten, l))
 
     dataset = dataset.map(parser)
 
