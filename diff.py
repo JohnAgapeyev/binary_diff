@@ -361,9 +361,9 @@ for i in range(len(hash_list)):
 best_cluster_count = 0
 best_silhouette_score = -1.0
 
-for i in range(1, 16):
+for i in range(2, 16):
     print("Trying cluster count {}".format(i))
-    ms = MiniBatchKMeans(n_clusters=10)
+    ms = MiniBatchKMeans(n_clusters=i)
     cluster_labels = ms.fit_predict(adj)
 
     silhouette_avg = metrics.silhouette_score(adj, cluster_labels)
@@ -371,7 +371,6 @@ for i in range(1, 16):
     if silhouette_avg > best_silhouette_score:
         best_silhouette_score = silhouette_avg
         best_cluster_count = i
-
 
 ms = MiniBatchKMeans(n_clusters=best_cluster_count).fit(adj)
 labels = ms.labels_
