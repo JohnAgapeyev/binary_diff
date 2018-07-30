@@ -372,7 +372,20 @@ for i in range(2, 16):
         best_silhouette_score = silhouette_avg
         best_cluster_count = i
 
-ms = MiniBatchKMeans(n_clusters=best_cluster_count).fit(adj)
+ms = MiniBatchKMeans(n_clusters=best_cluster_count)
+
+cluster_labels = ms.fit_predict(adj)
+
+clustered_files = {}
+for f in file_list:
+    lab = cluster_labels[file_list.index(f)]
+    if lab in clustered_files:
+        clustered_files[lab].append(f)
+    else:
+        clustered_files[lab] = [f]
+
+print(clustered_files)
+
 labels = ms.labels_
 cluster_centers = ms.cluster_centers_
 
