@@ -361,16 +361,14 @@ for i in range(len(hash_list)):
 best_cluster_count = 0
 best_silhouette_score = -1.0
 
-for i in range(2, 16):
+def cl(data):
+    i, adj = data
     print("Trying cluster count {}".format(i))
-    ms = MiniBatchKMeans(n_clusters=i)
-    cluster_labels = ms.fit_predict(adj)
+    return metrics.silhouette_score(adj, MiniBatchKMeans(n_clusters=i).fit_predict(adj))
 
-    silhouette_avg = metrics.silhouette_score(adj, cluster_labels)
-
-    if silhouette_avg > best_silhouette_score:
-        best_silhouette_score = silhouette_avg
-        best_cluster_count = i
+#Calculate the best cluster count in parallel
+silhouette_list = Pool().map(cl, zip(range(2, 16), itertools.repeat(adj)))
+best_cluster_count = silhouette_list.index(max(silhouette_list)) + 2
 
 ms = MiniBatchKMeans(n_clusters=best_cluster_count)
 
